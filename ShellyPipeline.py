@@ -33,7 +33,7 @@ class loxData(object):
         self.R2 = R2[:]
         self.path = path
 
-    def bowtie(self,options="--local -p 2",indexes="/home/feeney/bin/bowtie2/INDEXES/tair10"):
+    def bowtie(self,options="--local -p 4",indexes="/home/shelly/bin/bowtie2/INDEXES/tair10"):
         """
         As long as Align output is Sam the script will still work.
         """
@@ -64,10 +64,6 @@ class loxData(object):
 
             command = "cat %s | sort -u -k2,2n -k3,3n -k4,4n > %s.clean" % (r,r)
             call(command,shell=True)
-
-        # Remove intermediate Slim Files
-        remove_slims = "rm *.slim"
-        call(remove_slims,shell=True)
 
         # End
         self.R1slim = "R1.slim.clean"
@@ -152,7 +148,7 @@ class loxData(object):
         call(run_gff4joe,shell=True)
 
         # Bring Back out the files to CWD. Remove anno directory
-        print("Cleaning up Temporary Files and Folders")
+        print("Removing Temp GFF Folders")
         restructure_folder = "mv %s/anno/*.clean ./; rm -r anno" % (os.getcwd())
         call(restructure_folder,shell=True)
 
@@ -177,9 +173,6 @@ class loxData(object):
         self.filterR1R2("R1R2")
 
         print("Cleaning up Temp files")
-        # counts
-        clean_temp = "rm *.clean"
-        call(clean_temp,shell=True)
 
     def filterR1R2(self,R1R2):
 
@@ -457,64 +450,66 @@ class loxData(object):
 
         with open("RESULTS.txt","w") as results:
 
-            results.write("Results:\n")
-            results.write("\nOverall Number of reads: %s" % self.count_of_reads)
-            results.write("\nCount of R1 reads that aligned to genome: %s" % self.bowtie_R1_alignments)
-            results.write("\nCount of R2 reads that aligned to genome: %s" % self.bowtie_R2_alignments)
-            results.write("\nCount of R1 reads after clone removal:    %s" % self.R1_slim_clean_count)
-            results.write("\nCount of R2 reads after clone removal:    %s" % self.R2_slim_clean_count)
-            results.write("\nCount of reads after joining R1 and R2:   %s" % self.R1R2_join_count)
-            results.write("\nCount of Candidate Reads                  %s" % self.Candidate_Reads_count)
+            results.write("# Results:\n")
+            results.write("\n# Overall Number of reads: %s" % self.count_of_reads)
+            results.write("\n# Count of R1 reads that aligned to genome: %s" % self.bowtie_R1_alignments)
+            results.write("\n# Count of R2 reads that aligned to genome: %s" % self.bowtie_R2_alignments)
+            results.write("\n# Count of R1 reads after clone removal:    %s" % self.R1_slim_clean_count)
+            results.write("\n# Count of R2 reads after clone removal:    %s" % self.R2_slim_clean_count)
+            results.write("\n# Count of reads after joining R1 and R2:   %s" % self.R1R2_join_count)
+            results.write("\n# Count of Candidate Reads                  %s" % self.Candidate_Reads_count)
 
-            results.write("\n\nNumber of predicted genes: %s" % len(predictedGenes))
-            results.write("\nNumber of predicted genes in reads: %s" % len(predictedGenes.difference(alignedGenes)))
-            results.write("\nGenes not found: ")
+            results.write("\n\n# Number of predicted genes: %s" % len(predictedGenes))
+            results.write("\n# Number of predicted genes in reads: %s" % len(predictedGenes.difference(alignedGenes)))
+            results.write("\n# Genes not found: \n")
 
-            genesNotFound = [x for x in predictedGenes.difference(alignedGenes)]
+            genesNotFound = [x for x in predictedGenes.difference(predictedGenes.difference(alignedGenes))]
             results.write(" ".join(genesNotFound))
 
-            results.write("\n\nNumber of predicted gene pairs: %s" % len(predictedPairs))
-            results.write("\nNumber of predicted gene pairs found in reads: %s" % len(predictedGenesInPredictedPair))
+            results.write("\n\n# Number of predicted gene pairs: %s" % len(predictedPairs))
+            results.write("\n# Number of predicted gene pairs found in reads: %s" % len(predictedGenesInPredictedPair))
 
             # Overal Print outs
-            results.write("\n\nPredicted Genes in a Predicted Pair\n")
+            results.write("\n\n# Predicted Genes in a Predicted Pair\n")
             for tup in predictedGenesInPredictedPairList:
                 results.write(" ".join([tup[0],tup[1],str(tup[2]) + "\n"]))
 
-            results.write("\n\nPredicted Gene Paired with unpredicted Gene:\n")
+            results.write("\n\n# Predicted Gene Paired with unpredicted Gene:\n")
 
             for tup in predictedGenePairedWithUnpredictedGeneList:
                 check = self.checkAcessionNumber(tup[1],predictedGenes)
 
                 results.write(" ".join([tup[0],tup[1],str(tup[2]),check + "\n"]))
 
-            results.write("\n\nPredicted Genes but the Pair itself is not Predicted:\n")
+            results.write("\n\n# Predicted Genes but the Pair itself is not Predicted:\n")
             for tup in predictedGenesPairedWithPredcitedGeneButPairIsNotPredictedList:
                 results.write(" ".join([tup[0],tup[1],str(tup[2]) + "\n"]))
 
-    def checkAcessionNumber(self,gene2check,predictedGenes,acession_range=10):
+    @staticmethod
+    def checkAcessionNumber(gene2check,predictedGenes,acession_range=10):
 
         if gene2check != "Intergenic":
             acession_number = int(gene2check.split("G")[1])
             head            = gene2check.split("G")[0] + "G"
 
             # Doesn't work!
-            to_check_above = [head + str(x) for x in range(acession_number + 10,acession_number + 10 + (acession_range - 10))]
-            to_check_below = [head + str(x) for x in range(acession_number - 10 + (-acession_range + 10),acession_number-10)]
-            to_check = to_check_below + to_check_above
+            to_check = [head + "%05d" % x for x in range(acession_number-10, acession_number +10 + 1)]
+            for gene in to_check:
+                print gene
 
-            for ac in to_check:
-                print head + ac
+                if gene in predictedGenes:
+                    return "! %s" % (gene)
 
-                if head + ac in predictedGenes:
-                    print "poop"
-                    return "!"
             else:
                 return ""
 
         else:
             return ""
 
+    def cleanUp(self):
+        print("Cleaning up Current Directory")
+        command = "rm R1.slim* R2.slim*"
+        call(command,shell=True)
 
 class smartDict(dict):
 
@@ -618,6 +613,11 @@ def startupChecks():
         sys.exit(1)
 
     # Check for a .CSV file for a Candidate (if any) reads
+    csvs = [x for x in os.listdir(os.getcwd()) if ".csv" in x]
+
+    if len(csvs) == 0:
+        print("\nThere are no .CSV files in the current directory. Please add a CSV with predicted Genes\n")
+        sys.exit(1)
 
     try:
         return sys.argv[1]
@@ -645,18 +645,21 @@ if __name__== "__main__":
     signal.signal(signal.SIGPIPE,signal.SIG_DFL)
 
     # Script start
-    # path    = startupChecks()
-
-    # loxData = loxData(path)
-
-    # loxData.bowtie()
-    # loxData.slim_and_clean_sam_files()
-    # loxData.align2gff()
-    # loxData.getCandidateReads()
-    # loxData.compareCandidateReads2Predicted(predictedPairsCSV="PRSPosGenePairs.csv")
-
-    # --------- Testing ------------#
+    print sys.argv[:1]
     path    = startupChecks()
 
     loxData = loxData(path)
+
+    loxData.bowtie()
+    loxData.slim_and_clean_sam_files()
+    loxData.align2gff()
+    loxData.getCandidateReads()
     loxData.compareCandidateReads2Predicted(predictedPairsCSV="PRSPosGenePairs.csv")
+    loxData.cleanUp()
+
+    # --------- Testing ------------#
+    # path    = startupChecks()
+
+    # loxData = loxData(path)
+    # loxData.compareCandidateReads2Predicted(predictedPairsCSV="PRSPosGenePairs.csv")
+    # loxData.cleanUp()
