@@ -654,7 +654,7 @@ if __name__== "__main__":
     loxData.slim_and_clean_sam_files()
     loxData.align2gff()
     loxData.getCandidateReads()
-    loxData.compareCandidateReads2Predicted(predictedPairsCSV="PRSPosGenePairs.csv")
+    loxData.compareCandidateReads2Predicted(predictedPairsCSV="SUBSET_known_positives.csv")
     loxData.cleanUp()
 
     # --------- Testing ------------#
