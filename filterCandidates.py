@@ -58,12 +58,16 @@ class filterData(object):
         # Going Through Candidate Reads
         with open("Candidate_Reads.txt","r") as candidate_reads:
 
+            print("Going through the Candidate Reads")
             for line in candidate_reads:
                 row = line.strip().split()
 
                 readID = row[0]
                 geneA  = row[6].split(":")[0].split(".")[0]
                 geneB  = row[12].split(":")[0].split(".")[0]
+
+                geneA = self.checkAcessionNumberGlobal(geneA,predictedGenes,acession_range=50)
+                geneB = self.checkAcessionNumberGlobal(geneB,predictedGenes,acession_range=50)
 
                 alignedGenes.add(geneA)
                 alignedGenes.add(geneB)
@@ -91,13 +95,19 @@ class filterData(object):
                     # both genes predicted and pair B,A is predicted
                     predictedGenesInPredictedPair.add(geneB,geneA)
 
-                elif geneA in predictedGenes and geneB in predictedGenes and ((geneA,geneB) not in predictedPairs or (geneB,geneA) not in predictedPairs):
+                elif geneA in predictedGenes and geneB in predictedGenes and ((geneA,geneB)
+                       not in predictedPairs or (geneB,geneA) not in predictedPairs):
+                    
                     # both genes predicted pair is not predicted
                     # Write a check to see if they are close in acession number to another gene.
-                    if geneA in predictedGenesPairedWithPredcitedGeneButPairIsNotPredicted and geneB in predictedGenesPairedWithPredcitedGeneButPairIsNotPredicted[geneA]:
+                    if geneA in predictedGenesPairedWithPredcitedGeneButPairIsNotPredicted and \
+                       geneB in predictedGenesPairedWithPredcitedGeneButPairIsNotPredicted[geneA]:
+                        
                         predictedGenesPairedWithPredcitedGeneButPairIsNotPredicted.add(geneA,geneB)
 
-                    elif geneB in predictedGenesPairedWithPredcitedGeneButPairIsNotPredicted and geneA in predictedGenesPairedWithPredcitedGeneButPairIsNotPredicted[geneB]:
+                    elif geneB in predictedGenesPairedWithPredcitedGeneButPairIsNotPredicted and \
+                         geneA in predictedGenesPairedWithPredcitedGeneButPairIsNotPredicted[geneB]:
+                        
                         predictedGenesPairedWithPredcitedGeneButPairIsNotPredicted.add(geneB,geneA)
 
                     else:
@@ -261,12 +271,11 @@ class filterData(object):
                 results.write(" ".join([tup[0],tup[1],str(tup[2]),check1 + check2 + "\n"]))
 
     @staticmethod
-    def checkAcessionNumber(gene2check,predictedGenes,acession_range=10):
+    def checkAcessionNumber(gene2check,predictedGenes,acession_range=100):
 
         if gene2check != "Intergenic":
             acession_number = int(gene2check.split("G")[1])
             head            = gene2check.split("G")[0] + "G"
-
 
             to_check = [head + "%05d" % x for x in range(acession_number-10, acession_number +10 + 1)]
             for gene in to_check:
@@ -279,6 +288,26 @@ class filterData(object):
 
         else:
             return ""
+
+    def checkAcessionNumberGlobal(self,gene2check,predictedGenes,acession_range=50):
+        """
+        This will simply return the original gene or if its found a match then 
+        the matched gene.
+        """
+
+        if gene2check != "Intergenic":
+            acession_number = int(gene2check.split("G")[1])
+            head            = gene2check.split("G")[0] + "G"
+
+            to_check = [head + "%05d" % x for x in range(acession_number-10, acession_number +10 + 1)]
+            for gene in to_check:
+
+                if gene in predictedGenes:
+                    return gene
+
+            return gene2check
+        
+        return gene2check
 
     def cleanUp(self):
         print("Cleaning up Current Directory")
