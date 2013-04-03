@@ -28,30 +28,79 @@ class loxData(object):
             print("The number of R1's and R2's don't match")
             sys.exit(1)
 
-
         # End
         self.R1 = R1[:]
         self.R2 = R2[:]
         self.path = path
 
-    def bowtie(self,options="--local -p 8",indexes="/home/shelly/bin/bowtie2/INDEXES/tair10"):
+    def bowtie(self,options="--local -p 3",indexes_folder="/home/shelly/bin/bowtie2/INDEXES/"):
         """
         As long as Align output is Sam the script will still work.
         """
 
-        # Bowtie R1
-        print("Bowtie-ing R1 reads")
-        commandR1 = " ".join(["bowtie2",options,indexes,",".join(self.R1),"1> bowtie.R1.out.sam 2> bowtie.R1.stats"])
-        call(commandR1,shell=True)
+        # Bowtie to Yeast and Tair10
+        for genome in ["tair10"]:
+            # More specific for options for each genome
+            if genome == "yeast":
+                options += " "
 
-        # Bowtie R2
-        print("Bowtie-ing R2 reads")
-        commandR2 = " ".join(["bowtie2",options,indexes,",".join(self.R2),"1> bowtie.R2.out.sam 2> bowtie.R2.stats"])
-        call(commandR2,shell=True)
+            # Bowtie R1
+            indexes = os.path.join(indexes_folder,genome)
+
+            print("Bowtie-ing R1 reads to %s" % genome)
+            commandR1 = " ".join(["bowtie2",options,indexes,",".join(self.R1),"1> bowtie.R1.%s.sam 2> bowtie.R1.%s.stats" % (genome,genome)])
+            call(commandR1,shell=True)
+
+            # Bowtie R2
+            print("Bowtie-ing R2 reads %s" % genome)
+            commandR2 = " ".join(["bowtie2",options,indexes,",".join(self.R2),"1> bowtie.R2.%s.sam 2> bowtie.R2.%s.stats" % (genome,genome)])
+            call(commandR2,shell=True)
+
+        # # Loading Bowtied Yeast ReadIDs into memory
+        # yeast_bowtie_output = [x for x in os.listdir(os.getcwd()) if "yeast" in x and "sam" in x]
+        # readIDs_to_remove   = set()
+
+        # for f in yeast_bowtie_output:
+        #     print("\tLoading %f into Memory" % f)
+        #     with open(f,"r") as input_file:
+        #         for line in input_file:
+        #             row = line.strip().split()
+
+        #             readID    = row[0]
+        #             alignment = row[2]
+
+        #             if alignment != "*":
+        #                 readIDs_to_remove.add(readID)
+
+        # # Using these ReadID's parse the Tair10 sam files and remove readIDs
+        # # that also bowtied to Yeast
+        # print("Removing Yeast ReadIDs from Tair10 sam files")
+
+        # tair_bowtie_output = [x for x in os.listdir(os.getcwd()) if ".sam" in x and "tair"]
+
+        # for tair in tair_bowtie_output:
+        #     tair = os.path.join("../known_positives/alignments/",tair)
+
+        #     if "R1" in tair:
+        #         output_file = open("bowtie.R1.no.yeast.sam","w")
+        #     elif "R2" in tair:
+        #         output_file = open("remove.R2.no.yeast.sam","w")
+
+        #     with open(tair,"r") as t_file:
+        #         for line in t_file:
+        #             row = line.strip().split()
+
+        #             readID    = row[0]
+        #             alignment = row[2]
+
+        #             if readID not in yeast_readIDs and alignment != "*":
+        #                 output_file.write(line)
+
+        #     output_file.close()
 
         # End
-        self.R1sam = "bowtie.R1.out.sam"
-        self.R2sam = "bowtie.R2.out.sam"
+        self.R1sam = [x for x in os.listdir(os.getcwd()) if "R1" in x and "sam" in x][0]
+        self.R2sam = [x for x in os.listdir(os.getcwd()) if "R2" in x and "sam" in x][0]
 
     def slim_and_clean_sam_files(self):
 
@@ -71,7 +120,12 @@ class loxData(object):
         self.R2slim = "R2.slim.clean"
 
     def slim_sam_files(self,input_file,output_file):
-
+        """
+        Removed:
+        - all extra sam information that is not needed
+        - remove reads that don't start at 1 and are less than 40bps in length
+        """
+        print("\tSlimming %s" % input_file)
         with open(input_file,"r") as input_obj:
 
             with open(output_file,"w") as output:
@@ -91,45 +145,67 @@ class loxData(object):
                     direction      = row[1] 
                     chromosome     = row[2].replace("Chr","").replace("chr","")
                     start_position = row[3]
-                    end_position   = self.snipstring2End(row[5],start_position)
+                    quality        = int(row[4])
+                    cigar_string   = row[5]
+                    end_position   = self.snipstring2End(cigar_string,start_position)
                     sequence       = row[9]
 
-                    if direction == "0":
-                        output.write(" ".join([readID,chromosome,start_position,end_position,"+",sequence]) + "\n")
+                    # Meet the criteria of Match Starts at 1 and Length of 40bp?
+                    if self.findLength(cigar_string) >= 40 and self.getStartPos(cigar_string) <= 3:
+                        if direction == "0":
+                            output.write(" ".join([readID,chromosome,start_position,end_position,"+",sequence]) + "\n")
 
-                    elif direction == "16":
-                        output.write(" ".join([readID,chromosome,start_position,end_position,"-",sequence]) + "\n")
+                        elif direction == "16":
+                            output.write(" ".join([readID,chromosome,start_position,end_position,"-",sequence]) + "\n")
 
-    def snipstring2End(self,snip_string,start_position):
+    def snipstring2End(self,cigar_string,start_position):
         """
         Given a SAM formated snip string and a start position this method will
         calculate the length the end position of the read
         """
 
-        num = 0
-        temp = []
+        return str(int(start_position) + self.findLength(cigar_string) - 1)
 
-        for char in snip_string:
+    @staticmethod
+    def findLength(cigar_string):
+        good_cigar = set()
+        good_cigar.add("M")
+        good_cigar.add("I")
 
-            temp.append(char)
+        num = []
+        length = 0
+        for char in cigar_string:
+            try:
+                n = int(char)
+                num.append(str(n))
+            except ValueError:
+                to_length = "".join(num)
+                if char in good_cigar:
+                    length += int(to_length)
+                num = []
 
-            if char == "S":
-                temp = []
-                continue
+        return int(length)
 
-            elif char == "M":
-                num += int("".join(temp[:-1]))
-                temp = []
+    @staticmethod
+    def getStartPos(cigar_string):
+        """
+        given a sam cigar string return the position of the First aligned Base pair
+        in the alignment
+        """
+        temp =[]
 
-            elif char == "D":
-                num += int("".join(temp[:-1]))
-                temp = []
+        for char in cigar_string:
+            try:
+                n = int(char)
+                temp.append(char)
 
-            elif char == "I":
-                num -= int("".join(temp[:-1]))
-                temp = []
+            except ValueError:
+                if char == "M":
+                    return 1
+                else:
+                    return int("".join(temp)) + 1
 
-        return str(int(start_position) + int(num))
+
 
     def align2gff(self):
         """
@@ -321,7 +397,7 @@ if __name__== "__main__":
 
     loxData = loxData(path)
 
-    loxData.bowtie()
+    # loxData.bowtie()
     loxData.slim_and_clean_sam_files()
-    loxData.align2gff()
-    loxData.getCandidateReads()
+    # loxData.align2gff()
+    # loxData.getCandidateReads()
