@@ -194,13 +194,13 @@ class filterData(object):
 
         # Since Sam files have all reads. Count raw sam count gives number of input reads
         print("Counting Reads...")
-        count_input_reads_command = "wc -l ./alignments/bowtie.R1.out.sam | awk '{print $1}'"
+        count_input_reads_command = "wc -l ./alignments/bowtie.R1.tair10.sam | awk '{print $1}'"
         self.count_of_reads = check_output(count_input_reads_command,shell=True).strip()
 
-        bowtie_R1_alignments_command = """cat ./alignments/bowtie.R1.out.sam | awk '{count++; if(count > 9 && $3 != "*") print $0}' | wc -l | awk '{print $1}'"""
+        bowtie_R1_alignments_command = """cat ./alignments/bowtie.R1.tair10.sam | awk '{count++; if(count > 9 && $3 != "*") print $0}' | wc -l | awk '{print $1}'"""
         self.bowtie_R1_alignments = check_output(bowtie_R1_alignments_command,shell=True).strip()
 
-        bowtie_R2_alignments_command = """cat ./alignments/bowtie.R2.out.sam | awk '{count++; if(count > 9 && $3 != "*") print $0}' | wc -l | awk '{print $1}'"""
+        bowtie_R2_alignments_command = """cat ./alignments/bowtie.R2.tair10.sam | awk '{count++; if(count > 9 && $3 != "*") print $0}' | wc -l | awk '{print $1}'"""
         self.bowtie_R2_alignments = check_output(bowtie_R2_alignments_command,shell=True).strip()
 
         Candidate_Reads_count_command = "cat Candidate_Reads.txt | wc -l | awk '{print $1}'"
