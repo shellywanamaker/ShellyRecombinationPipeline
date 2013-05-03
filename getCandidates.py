@@ -11,12 +11,18 @@ class loxData(object):
 
     # ---- Initiate Object
     def __init__(self):
+        path = os.getcwd()
         R1sam = [x for x in os.listdir(path) if "R1" in x and "sam" in x]
         R2sam = [x for x in os.listdir(path) if "R2" in x and "sam" in x]
 
         if len(R1sam) > 1 or len(R2sam) >1:
             print("I found too many Bowtie output files in here!")
             print("I only expected to find 1 R1.sam and 1 R2.sam")
+            sys.exit(1)
+
+        elif len(R1sam) == 0 or len(R2sam) == 0:
+            print("Didn't Find any sam files!")
+            print("Make sure your files end in a .sam")
             sys.exit(1)
 
         self.R1sam = os.path.realpath(R1sam[0])
