@@ -167,7 +167,13 @@ class loxData(object):
         """
         # New implementation
         # Read Chroms into memory
-        chromosome_files = [os.path.join("/home/shelly/bin/gff4joe/Columns_Annotation/tair10/Genic_Annotation/B",str(x)) for x in range(1,6)]
+
+        # Find the dir where the script is installed
+        abs_path_to_script = os.path.realpath(sys.argv[0])
+        script_dir = os.path.split(abs_path_to_script)[0]
+        chrom_annotations_dir = os.path.join(script_dir,"TAIR10_Chrom_Annotations")
+
+        chromosome_files = [os.path.join(chrom_annotations_dir,str(x)) for x in range(1,6)]
         chromosomes = {str(x):{} for x in range(1,6)}
         
         for chromosome in chromosome_files:
@@ -225,7 +231,7 @@ class loxData(object):
         print("Cleaning up Temp files")
 
     # ---- ---- Helper Function for getCandidateReads
-    def filterR1R2(self,R1R2):
+    def filterR1R2(self,R1R2,debug=False):
 
         with open(R1R2,"r") as all_reads:
 
@@ -250,7 +256,8 @@ class loxData(object):
                     geneAinfo = genes["geneA"]
                     geneBinfo = genes["geneB"]
 
-                    print line.strip(),geneAinfo,geneBinfo
+                    if debug:
+                        print line.strip(),geneAinfo,geneBinfo
 
                     geneA = geneAinfo.split(":")[0].split(".")[0]
                     geneB = geneBinfo.split(":")[0].split(".")[0]

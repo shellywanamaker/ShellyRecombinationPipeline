@@ -3,7 +3,7 @@
 import os
 import sys
 import signal
-from subprocess import call
+import subprocess
 from subprocess import check_output
 
 
@@ -14,7 +14,8 @@ class filterData(object):
         self.csv        = csv_file
         self.complement = False
 
-    def compareCandidateReads2Predicted(self):
+
+    def compareCandidateReads2Predicted(self,modify_accession_numbers=True):
         """
         """
         predictedPairsCSV = self.csv
@@ -66,8 +67,10 @@ class filterData(object):
                 geneA  = row[6].split(":")[0].split(".")[0]
                 geneB  = row[12].split(":")[0].split(".")[0]
 
-                geneA = self.checkAcessionNumberGlobal(geneA,predictedGenes,acession_range=50)
-                geneB = self.checkAcessionNumberGlobal(geneB,predictedGenes,acession_range=50)
+
+                if modify_accession_numbers:
+                    geneA = self.checkAcessionNumberGlobal(geneA,predictedGenes,acession_range=50)
+                    geneB = self.checkAcessionNumberGlobal(geneB,predictedGenes,acession_range=50)
 
                 alignedGenes.add(geneA)
                 alignedGenes.add(geneB)
@@ -270,6 +273,7 @@ class filterData(object):
                 
                 results.write(" ".join([tup[0],tup[1],str(tup[2]),check1 + check2 + "\n"]))
 
+
     @staticmethod
     def checkAcessionNumber(gene2check,predictedGenes,acession_range=100):
 
@@ -288,6 +292,7 @@ class filterData(object):
 
         else:
             return ""
+
 
     def checkAcessionNumberGlobal(self,gene2check,predictedGenes,acession_range=50):
         """
@@ -309,13 +314,15 @@ class filterData(object):
         
         return gene2check
 
+
     def cleanUp(self):
         print("Cleaning up Current Directory")
         command = "rm R1.slim* R2.slim*"
-        call(command,shell=True)
+        subprocess.call(command,shell=True)
 
 
 class smartDict(dict):
+
 
     def __str__(self):
 
@@ -410,6 +417,8 @@ class smartDict(dict):
         return countOfKeysAndTheirValues
 
 
+
+# ---- NON-ANALYSIS FUNCTIONS!!
 def startupChecks():
 
     try:
@@ -465,5 +474,5 @@ if __name__=="__main__":
     # ---- Running
     f = filterData(csv_file)
 
-    f.compareCandidateReads2Predicted()
+    f.compareCandidateReads2Predicted(modify_accession_numbers=True)
 
