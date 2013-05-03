@@ -2,6 +2,8 @@
 
 from filterCandidates import *
 from getCandidates import *
+from bowtieFastqs import *
+
 
 if __name__=="__main__":
 
@@ -12,7 +14,7 @@ if __name__=="__main__":
     csv_files = [x for x in os.listdir(os.getcwd()) if ".csv" in x]
 
     if len(csv_files) == 0:
-        print("\nCouldn't Find a .csv to Work against!\n")
+        print("\nCouldn't Find a .csv to work against!\n")
         sys.exit(1)
 
     elif len(csv_files) > 1:
@@ -24,13 +26,18 @@ if __name__=="__main__":
         print("Using %s as the Gene Pairs csv" % (csv_file))
 
     # ---- Script start
-    path    = startupChecks()
-    loxData = loxData(path)
-    f       = filterData(csv_file)
+    # ---- Instantiate Classes
+    bowtieFastqs     = bowtieFastqs()
+    loxData          = loxData(path)
+    filterCandidates = filterData(csv_file)
 
-    loxData.bowtie()
-    loxData.slim_and_clean_sam_files()
+    # ---- bowtieFastqs
+    bowtieFastqs.bowtie()
+
+    # ---- getCandidates Module
+    loxData.slim_and_clean_sam_files(no_filter=False,harsh_filter=False)
     loxData.align2gff()
     loxData.getCandidateReads()
 
-    f.compareCandidateReads2Predicted()
+    # ---- filter Candidates
+    filterCandidates.compareCandidateReads2Predicted()

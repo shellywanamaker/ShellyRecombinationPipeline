@@ -9,104 +9,27 @@ from subprocess import check_output
 
 class loxData(object):
 
-    def __init__(self,path):
+    # ---- Initiate Object
+    def __init__(self):
+        R1sam = [x for x in os.listdir(path) if "R1" in x and "sam" in x]
+        R2sam = [x for x in os.listdir(path) if "R2" in x and "sam" in x]
 
-        # Make a list of all the Absolute paths to the fastq's
-        # Assume Run is pair end. Break run in to pair end tuples
-        fastqs = [path + "/" + x for x in os.listdir(path) if ".fastq" in x]
-        R1     = [x for x in fastqs if "_R1_" in x]
-        R2     = [x for x in fastqs if "_R2_" in x]
-
-        R1.sort()
-        R2.sort()
-
-        if len(fastqs) < 1:
-            print("Could not find .fastq files in either the provided directory or in the current directory")
+        if len(R1sam) > 1 or len(R2sam) >1:
+            print("I found too many Bowtie output files in here!")
+            print("I only expected to find 1 R1.sam and 1 R2.sam")
             sys.exit(1)
 
-        elif len(R1) != len(R2):
-            print("The number of R1's and R2's don't match")
-            sys.exit(1)
+        self.R1sam = os.path.realpath(R1sam[0])
+        self.R2sam = os.path.realpath(R2sam[0])
 
-        # End
-        self.R1 = R1[:]
-        self.R2 = R2[:]
-        self.path = path
+        print self.R1sam,self.R2sam
 
-    def bowtie(self,options="--local -p 3",indexes_folder="/home/shelly/bin/bowtie2/INDEXES/"):
-        """
-        As long as Align output is Sam the script will still work.
-        """
-
-        # Bowtie to Yeast and Tair10
-        for genome in ["tair10"]:
-            # More specific for options for each genome
-            if genome == "yeast":
-                options += " "
-
-            # Bowtie R1
-            indexes = os.path.join(indexes_folder,genome)
-
-            print("Bowtie-ing R1 reads to %s" % genome)
-            commandR1 = " ".join(["bowtie2",options,indexes,",".join(self.R1),"1> bowtie.R1.%s.sam 2> bowtie.R1.%s.stats" % (genome,genome)])
-            call(commandR1,shell=True)
-
-            # Bowtie R2
-            print("Bowtie-ing R2 reads %s" % genome)
-            commandR2 = " ".join(["bowtie2",options,indexes,",".join(self.R2),"1> bowtie.R2.%s.sam 2> bowtie.R2.%s.stats" % (genome,genome)])
-            call(commandR2,shell=True)
-
-        # # Loading Bowtied Yeast ReadIDs into memory
-        # yeast_bowtie_output = [x for x in os.listdir(os.getcwd()) if "yeast" in x and "sam" in x]
-        # readIDs_to_remove   = set()
-
-        # for f in yeast_bowtie_output:
-        #     print("\tLoading %f into Memory" % f)
-        #     with open(f,"r") as input_file:
-        #         for line in input_file:
-        #             row = line.strip().split()
-
-        #             readID    = row[0]
-        #             alignment = row[2]
-
-        #             if alignment != "*":
-        #                 readIDs_to_remove.add(readID)
-
-        # # Using these ReadID's parse the Tair10 sam files and remove readIDs
-        # # that also bowtied to Yeast
-        # print("Removing Yeast ReadIDs from Tair10 sam files")
-
-        # tair_bowtie_output = [x for x in os.listdir(os.getcwd()) if ".sam" in x and "tair"]
-
-        # for tair in tair_bowtie_output:
-        #     tair = os.path.join("../known_positives/alignments/",tair)
-
-        #     if "R1" in tair:
-        #         output_file = open("bowtie.R1.no.yeast.sam","w")
-        #     elif "R2" in tair:
-        #         output_file = open("remove.R2.no.yeast.sam","w")
-
-        #     with open(tair,"r") as t_file:
-        #         for line in t_file:
-        #             row = line.strip().split()
-
-        #             readID    = row[0]
-        #             alignment = row[2]
-
-        #             if readID not in yeast_readIDs and alignment != "*":
-        #                 output_file.write(line)
-
-        #     output_file.close()
-
-        # End
-        self.R1sam = [x for x in os.listdir(os.getcwd()) if "R1" in x and "sam" in x][0]
-        self.R2sam = [x for x in os.listdir(os.getcwd()) if "R2" in x and "sam" in x][0]
-
-    def slim_and_clean_sam_files(self):
+    # ----  Remove non-aligned; ChrM and ChrC; low quality; and clones
+    def slim_and_clean_sam_files(self,no_filter=False,harsh_filter=False):
 
         print("Slimming Files")
-        self.slim_sam_files(self.R1sam,"R1.slim")
-        self.slim_sam_files(self.R2sam,"R2.slim")
+        self.slim_sam_files(self.R1sam,"R1.slim",no_filter=no_filter,harsh_filter=harsh_filter)
+        self.slim_sam_files(self.R2sam,"R2.slim",no_filter=no_filter,harsh_filter=harsh_filter)
 
         print("Removing Clones from Slim Files")
         for r in ["R1.slim","R2.slim"]:
@@ -119,7 +42,9 @@ class loxData(object):
         self.R1slim = "R1.slim.clean"
         self.R2slim = "R2.slim.clean"
 
-    def slim_sam_files(self,input_file,output_file):
+    # ---- ---- Helper Function for Slim and Clean Removal of low quality
+    # ---- ---- and ChrM/ChrC performed Here
+    def slim_sam_files(self,input_file,output_file,no_filter,hash_filter):
         """
         Removed:
         - all extra sam information that is not needed
@@ -150,14 +75,41 @@ class loxData(object):
                     end_position   = self.snipstring2End(cigar_string,start_position)
                     sequence       = row[9]
 
-                    # Meet the criteria of Match Starts at 1 and Length of 40bp?
-                    if self.findLength(cigar_string) >= 40 and self.getStartPos(cigar_string) <= 3:
+                    # Choose a Filter
+                    if no_filter:
                         if direction == "0":
-                            output.write(" ".join([readID,chromosome,start_position,end_position,"+",sequence]) + "\n")
+                            to_write = " ".join([readID,chromosome,start_position,end_position,"+",sequence]) + "\n"
 
                         elif direction == "16":
-                            output.write(" ".join([readID,chromosome,start_position,end_position,"-",sequence]) + "\n")
+                            to_write = " ".join([readID,chromosome,start_position,end_position,"-",sequence]) + "\n"
+                    
+                    # Basic Filter where matches must be of length 40 and start within 3bp of the start of the read
+                    if not no_filter and not harsh_filter and self.findLength(cigar_string) >= 40 and self.getStartPos(cigar_string) <= 3:
+                        if direction == "0":
+                            to_write = " ".join([readID,chromosome,start_position,end_position,"+",sequence]) + "\n"
 
+                        elif direction == "16":
+                            to_write = " ".join([readID,chromosome,start_position,end_position,"-",sequence]) + "\n"
+                    
+                    # Same as basic except Reads must have no more than One Insert and Deletion
+                    if not no_filter and hash_filter and self.findLength(cigar_string) >= 40 \
+                        and self.getStartPos(cigar_string) <= 3 \
+                        and len(deletions) <=1 and len(inserts) <= 1:
+
+                        if direction == "0":
+                            to_write = " ".join([readID,chromosome,start_position,end_position,"+",sequence]) + "\n"
+
+                        elif direction == "16":
+                            to_write = " ".join([readID,chromosome,start_position,end_position,"-",sequence]) + "\n"
+
+                    else:
+                        continue
+                    
+
+                    output.write(to_write)
+
+
+    # ---- ---- Helper Functions for Slim Sam Files
     def snipstring2End(self,cigar_string,start_position):
         """
         Given a SAM formated snip string and a start position this method will
@@ -165,6 +117,7 @@ class loxData(object):
         """
 
         return str(int(start_position) + self.findLength(cigar_string) - 1)
+
 
     @staticmethod
     def findLength(cigar_string):
@@ -186,6 +139,7 @@ class loxData(object):
 
         return int(length)
 
+
     @staticmethod
     def getStartPos(cigar_string):
         """
@@ -206,44 +160,63 @@ class loxData(object):
                     return int("".join(temp)) + 1
 
 
-
+    # ---- Get what genes the Tair10 alignments are
     def align2gff(self):
         """
         This may change at a certain point. Be sure that this method can be ripped out.
         """
-        print("Prepping Directory for Alignment/Gene Matching")
-        make_gff_output_dir = "mkdir anno"
-        call(make_gff_output_dir,shell=True)
+        # New implementation
+        # Read Chroms into memory
+        chromosome_files = [os.path.join("/home/shelly/bin/gff4joe/Columns_Annotation/tair10/Genic_Annotation/B",str(x)) for x in range(1,6)]
+        chromosomes = {str(x):{} for x in range(1,6)}
+        
+        for chromosome in chromosome_files:
+            print("Loading Chromosome %s into Memory" % chromosome)
+            chrom = os.path.basename(chromosome)
 
-        move_alignment_files = "mkdir alignments;mv *.sam alignments/;mv *.stats alignments/"
-        call(move_alignment_files,shell=True)
+            with open(chromosome) as in_file:
+                for line in in_file:
+                    row = line.strip().split("\t")
+                    position = row[0]
+                    positive = row[1]
+                    negative = row[2]
 
-        # Counts
+                    chromosomes[chrom][position] = (positive,negative)
 
-        print("Running Alignment -> Gene matching")
-        run_gff4joe = "/home/feeney/bin/gff4joe/gff4joe.pl %s" % (os.getcwd())
-        call(run_gff4joe,shell=True)
+        # Go through and match
+        for tup in [("R1.slim.clean","R1.gff.out"),("R2.slim.clean","R2.gff.out")]:
+            print("Aligning %s to the GFF" % tup[0])
+            with open(tup[0],"r") as in_file:
+                with open(tup[1],"w") as out_file:
 
-        # Bring Back out the files to CWD. Remove anno directory
-        print("Removing Temp GFF Folders")
-        restructure_folder = "mv %s/anno/*.clean ./; rm -r anno" % (os.getcwd())
-        call(restructure_folder,shell=True)
+                    for line in in_file:
+                        row = line.strip().split()
+
+                        aligned_chromosome = row[1]
+                        aligned_start = row[2]
+
+                        genes = chromosomes[aligned_chromosome][aligned_start]
+
+                        to_write = [line.strip(),genes[0],genes[1]]
+                        out_file.write(" ".join(to_write) + "\n")
 
         # The end of this method only needs to provide R1 and R2 .slim.clean in the CWD
 
+    # ---- Get Candidate Reads by joining R1 and R2 together. Filter and keep genes
+    # ---- where R1 != R2
     def getCandidateReads(self):
         print("Getting Candidate Reads")
 
         print("\tSorting R1 by ReadID")
-        sort_R1 = "sort -k1,1 R1.slim.clean > x; mv x R1.slim.clean"
+        sort_R1 = "sort -k1,1 R1.gff.out > x; mv x R1.gff.out"
         call(sort_R1,shell=True)
 
         print("\tSorting R2 by ReadID")
-        sort_R2 = "sort -k1,1 R2.slim.clean > x; mv x R2.slim.clean"
+        sort_R2 = "sort -k1,1 R2.gff.out > x; mv x R2.gff.out"
         call(sort_R2,shell=True)
 
         print("\tJoining R1 and R2")
-        join_R1_and_R2 = "join -j1 R1.slim.clean R2.slim.clean > R1R2"
+        join_R1_and_R2 = "join -j1 R1.gff.out R2.gff.out > R1R2"
         call(join_R1_and_R2,shell = True)
 
         print("\tFiltering R1R2: Only keepin reads where GeneA != GeneB")
@@ -251,6 +224,7 @@ class loxData(object):
 
         print("Cleaning up Temp files")
 
+    # ---- ---- Helper Function for getCandidateReads
     def filterR1R2(self,R1R2):
 
         with open(R1R2,"r") as all_reads:
@@ -260,7 +234,6 @@ class loxData(object):
                 for i,line in enumerate(all_reads):
 
                     row = line.strip().split()
-                    # print line
 
                     A_line_info = row[:6]
                     B_line_info = row[8:13]
@@ -268,7 +241,7 @@ class loxData(object):
                     geneAPos = row[6]
                     geneANeg = row[7]
                     geneBPos = row[13]
-                    geneBNeg = row[14]
+                    geneBNeg = row[14] 
 
                     genes_to_choose = {"geneA":(geneAPos,geneANeg),"geneB":(geneBPos,geneBNeg)}
 
@@ -277,12 +250,15 @@ class loxData(object):
                     geneAinfo = genes["geneA"]
                     geneBinfo = genes["geneB"]
 
+                    print line.strip(),geneAinfo,geneBinfo
+
                     geneA = geneAinfo.split(":")[0].split(".")[0]
                     geneB = geneBinfo.split(":")[0].split(".")[0]
 
                     if geneA != geneB:
                         candidate_reads.write(" ".join([" ".join(A_line_info),geneAinfo," ".join(B_line_info),geneBinfo + "\n"]))
 
+    # ---- ---- Helper Function for filterR1R2. Decides how to rank the two strands.
     def chooseGeneAandGeneB(self,geneDict):
         for gene in geneDict:
 
@@ -355,49 +331,15 @@ class loxData(object):
         return geneDict
 
 
-def startupChecks():
-
-    # Check for Bowtie2
-    if not check_PATH_for_program("bowtie2"):
-        print("\nBowtie2 is not in your $PATH. Can you modify your .bash_profile or .bashrc, please?\n")
-        sys.exit(1)
-
-    # Check for a .CSV file for a Candidate (if any) reads
-    csvs = [x for x in os.listdir(os.getcwd()) if ".csv" in x]
-
-    try:
-        return sys.argv[1]
-    except IndexError:
-        return os.getcwd()
-
-def check_PATH_for_program(f):
-    """
-    Check the unix $PATH environment for specified program
-    """
-
-    path = os.environ["PATH"].split(":")
-
-    for p in path:
-
-        if os.path.isfile(p + "/" + f):
-            return True
-
-    else:
-        return False
-
-
-
 if __name__== "__main__":
 
-    # Play Nice with Unix
+    # ---- Play Nice with Unix
     signal.signal(signal.SIGPIPE,signal.SIG_DFL)
 
-    # Script start
-    path    = startupChecks()
+    # ---- Script start
+    loxData = loxData()
 
-    loxData = loxData(path)
-
-    # loxData.bowtie()
-    loxData.slim_and_clean_sam_files()
-    # loxData.align2gff()
-    # loxData.getCandidateReads()
+    # ---- Run Methods
+    loxData.slim_and_clean_sam_files(no_filter=False,harsh_filter=False)
+    loxData.align2gff()
+    loxData.getCandidateReads()
