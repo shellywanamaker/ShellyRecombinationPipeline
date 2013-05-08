@@ -39,13 +39,34 @@ class bowtieFastqs(object):
         self.path = path
 
 
-    def bowtie(self,options="--local -p 3",indexes_folder="/home/shelly/bin/bowtie2/INDEXES/"):
+    def bowtie(self,options="--local -p 3",indexes_folder="/home/shelly/bin/bowtie2/INDEXES/",genome_basename="tair10"):
         """
         As long as Align output is Sam the script will still work.
         """
+        if not os.path.isdir("/home/shelly/bin/bowtie2/INDEXES/"):
+            print("Could not find your INDEXES Folder: %s" % indexes_folder)
+
+            while True:
+
+                indexes_folder = raw_input("What is the path (abs or relative) to the Bowtie2 INDEXES: ")
+                indexes_folder = os.path.abspath(indexes_folder)
+
+                if os.path.isdir(indexes_folder) and\
+                        len([x for x in os.listdir(indexes_folder) if genome_basename in x]) > 0:
+
+                    print("Looks like that will work!")
+                    break
+
+                elif os.path.isdir(indexes_folder):
+                    print("I couldn't find a genome with a basename %s in %s" %(genome_basename,indexes_folder))
+                    print("Try another folder")
+
+                else:
+                    print("Looks like that folder doesn't exist!")
+
 
         # Bowtie to Yeast and Tair10
-        for genome in ["tair10"]:
+        for genome in [genome_basename]:
             # More specific for options for each genome
             if genome == "yeast":
                 options += " "
