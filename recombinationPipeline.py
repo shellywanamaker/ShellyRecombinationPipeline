@@ -32,16 +32,12 @@ if __name__=="__main__":
     options         = "--local -p 3"
     indexes_folder  = "/home/shelly/bin/bowtie2/INDEXES/"
 
-
-    # ---- Instantiate Classes
-    bowtieFastqs     = bowtieFastqs()
-    loxData          = loxData()
-    filterCandidates = filterData(csv_file)
-
     # ---- bowtieFastqs.py
+    bowtieFastqs     = bowtieFastqs()
     bowtieFastqs.bowtie(options=options,indexes_folder=indexes_folder,genome_basename=genome_basename)
 
     # ---- getCandidates.py
+    loxData = loxData()
     loxData.slim_and_clean_sam_files(no_filter=False,harsh_filter=True)
     loxData.align2gff()
     loxData.getCandidateReads()
@@ -50,4 +46,5 @@ if __name__=="__main__":
     # NOTE: If modify accession numbers is False the script will still check the
     #       the closest accession number matches. It just won't modify genes to the
     #       closest one.
+    filterCandidates = filterData(csv_file)
     filterCandidates.compareCandidateReads2Predicted(modify_accession_numbers=False)

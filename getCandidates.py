@@ -51,7 +51,7 @@ class loxData(object):
             print
             print("Now Resuming Script.")
 
-        elif not os.path.isdir(chrom_annotations_dir) and not os.path.isfile(chrom_annotations_dir + ".zip"):
+        elif not os.path.isdir(self.chrom_annotations_dir) and not os.path.isfile(self.chrom_annotations_dir + ".zip"):
             print("Could not find either the TAIR10 Chrom annotations folder or chrom Annotations Zip")
             print("Please re-clone from GITHUB")
             sys.exit(1)
