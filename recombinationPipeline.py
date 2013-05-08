@@ -26,13 +26,20 @@ if __name__=="__main__":
         print("Using %s as the Gene Pairs csv" % (csv_file))
 
     # ---- Script start
+
+    # ---- Options for Bowtie
+    genome_basename = "tair10"
+    options         = "--local -p 3"
+    indexes_folder  = "/home/shelly/bin/bowtie2/INDEXES/"
+
+
     # ---- Instantiate Classes
     bowtieFastqs     = bowtieFastqs()
     loxData          = loxData()
     filterCandidates = filterData(csv_file)
 
     # ---- bowtieFastqs.py
-    bowtieFastqs.bowtie(options="--local -p 4",indexes_folder="/home/shelly/bin/bowtie2/INDEXES/")
+    bowtieFastqs.bowtie(options=options,indexes_folder=indexes_folder,genome_basename=genome_basename)
 
     # ---- getCandidates.py
     loxData.slim_and_clean_sam_files(no_filter=False,harsh_filter=True)

@@ -144,10 +144,15 @@ def check_PATH_for_program(f):
 
 if __name__=="__main__":
 
-    # Check for Bowtie2
+    genome_basename = "tair10"
+    options         = "--local -p 3"
+    indexes_folder  = "/home/shelly/bin/bowtie2/INDEXES/" 
+
+    # ---- Check for Bowtie2
     if not check_PATH_for_program("bowtie2"):
         print("\nBowtie2 is not in your $PATH. Can you modify your .bash_profile or .bashrc, please?\n")
         sys.exit(1)
 
+    # ---- Run Script
     b = bowtieFastqs()
-    b.bowtie()
+    b.bowtie(options=options,indexes_folder=indexes_folder,genome_basename=genome_basename)
