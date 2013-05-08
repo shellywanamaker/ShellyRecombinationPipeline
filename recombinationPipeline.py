@@ -40,4 +40,7 @@ if __name__=="__main__":
     loxData.getCandidateReads()
 
     # ---- filterCandidates.py
-    filterCandidates.compareCandidateReads2Predicted()
+    # NOTE: If modify accession numbers is False the script will still check the
+    #       the closest accession number matches. It just won't modify genes to the
+    #       closest one.
+    filterCandidates.compareCandidateReads2Predicted(modify_accession_numbers=False)
