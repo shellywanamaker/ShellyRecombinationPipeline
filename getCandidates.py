@@ -11,6 +11,7 @@ from subprocess import check_output
 
 class loxData(object):
 
+
     # ---- Initiate Object
     def __init__(self):
         path = os.getcwd()
@@ -29,6 +30,31 @@ class loxData(object):
 
         self.R1sam = os.path.realpath(R1sam[0])
         self.R2sam = os.path.realpath(R2sam[0])
+
+        # Check for Chrom Annotations
+        # Find the dir where the script is installed
+        # Use that to infer where the annotations are kept.
+        annotations_folder_name    = "TAIR10_Chrom_Annotations"
+        abs_path_to_script         = os.path.realpath(sys.argv[0])
+        script_dir                 = os.path.split(abs_path_to_script)[0]
+
+        self.chrom_annotations_dir = os.path.join(script_dir,annotations_folder_name)
+
+        # Is there a Chrom Annotations zip in the dir?
+        if not os.path.isdir(self.chrom_annotations_dir) and os.path.isfile(self.chrom_annotations_dir + ".zip"):
+            # Unzip annotations folder
+            print("Installing TAIR10 Chromosome Annotations in the Script Directory")
+            print("This will happen only the first time the script is run on a server")
+            print("\tUnzipping...")
+            unzip = "unzip %s -d %s" % (self.chrom_annotations_dir + ".zip",script_dir)
+            call(unzip,shell=True)
+            print
+            print("Now Resuming Script.")
+
+        elif not os.path.isdir(chrom_annotations_dir) and not os.path.isfile(chrom_annotations_dir + ".zip"):
+            print("Could not find either the TAIR10 Chrom annotations folder or chrom Annotations Zip")
+            print("Please re-clone from GITHUB")
+            sys.exit(1)
 
 
     # ----  Remove non-aligned; ChrM and ChrC; low quality; and clones
@@ -50,6 +76,8 @@ class loxData(object):
         self.R1sam = R1Basename + ".no.multi"
         self.R2sam = R2Basename + ".no.multi"
 
+        # This step is where the extra SAM information is tossed and the
+        # Snipstring filters are.
         print("Slimming Files")
         self.slim_sam_files(self.R1sam,"R1.slim.filtered",no_filter=no_filter,harsh_filter=harsh_filter)
         self.slim_sam_files(self.R2sam,"R2.slim.filtered",no_filter=no_filter,harsh_filter=harsh_filter)
@@ -65,7 +93,7 @@ class loxData(object):
         # This is not as complicated as it seems
         # All it is saying is that we want to see every read we pass it
         # If One side didn't align then we are going to see "NA" in the place
-        # where we should have seen it.
+        # the columns that should have been seen.
         command = """join -a1 -a2 -j 1 -o 0 1.2 1.3 1.4 1.5 1.6 1.7 2.2 2.3 2.4 2.5 2.6 2.7 -e "NA" %s %s > R1R2.no.genes""" % ("R1.slim.filtered.sorted","R2.slim.filtered.sorted")
         call(command,shell=True)
 
@@ -235,25 +263,23 @@ class loxData(object):
     # ---- Get what genes the Tair10 alignments are
     def align2gff(self,debug=False):
         """
-        This may change at a certain point. Be sure that this method can be ripped out.
+        Annotated Chromosomes are read into memory.
+        Then the R1R2 files is read one line at a time.
+        Using the chromosomal position of the alignment the annotated chromsomes 
+        return what genes are on the positive and negative strands.
+
+        NOTE: the annotations are not stored in GIT. They are too big!
         """
+        print("Prepping for GFF alignment Step.")
 
         if debug:
             self.R1R2 = "R1R2.no.genes.no.clones"
 
-        # New implementation
-        # Read Chroms into memory
-
-        # Find the dir where the script is installed
-        abs_path_to_script = os.path.realpath(sys.argv[0])
-        script_dir = os.path.split(abs_path_to_script)[0]
-        chrom_annotations_dir = os.path.join(script_dir,"TAIR10_Chrom_Annotations")
-
-        chromosome_files = [os.path.join(chrom_annotations_dir,str(x)) for x in range(1,6)]
+        chromosome_files = [os.path.join(self.chrom_annotations_dir,str(x)) for x in range(1,6)]
         chromosomes = {str(x):{} for x in range(1,6)}
         
         for chromosome in chromosome_files:
-            print("Loading Chromosome %s into Memory" % chromosome)
+            print("\tLoading Chromosome %s into Memory" % chromosome)
             chrom = os.path.basename(chromosome)
 
             with open(chromosome) as in_file:
