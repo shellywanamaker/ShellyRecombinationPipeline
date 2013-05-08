@@ -50,7 +50,7 @@ class bowtieFastqs(object):
             while True:
 
                 indexes_folder = raw_input("What is the path (abs or relative) to the Bowtie2 INDEXES: ")
-                indexes_folder = os.path.abspath(indexes_folder)
+                indexes_folder = os.path.abspath(os.path.expanduser(indexes_folder))
 
                 if os.path.isdir(indexes_folder) and\
                         len([x for x in os.listdir(indexes_folder) if genome_basename in x]) > 0:
