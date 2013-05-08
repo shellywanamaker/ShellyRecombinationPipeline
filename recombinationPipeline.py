@@ -28,16 +28,16 @@ if __name__=="__main__":
     # ---- Script start
     # ---- Instantiate Classes
     bowtieFastqs     = bowtieFastqs()
-    loxData          = loxData(path)
+    loxData          = loxData()
     filterCandidates = filterData(csv_file)
 
-    # ---- bowtieFastqs
-    bowtieFastqs.bowtie()
+    # ---- bowtieFastqs.py
+    bowtieFastqs.bowtie(options="--local -p 4",indexes_folder="/home/shelly/bin/bowtie2/INDEXES/")
 
-    # ---- getCandidates Module
-    loxData.slim_and_clean_sam_files(no_filter=False,harsh_filter=False)
+    # ---- getCandidates.py
+    loxData.slim_and_clean_sam_files(no_filter=False,harsh_filter=True)
     loxData.align2gff()
     loxData.getCandidateReads()
 
-    # ---- filter Candidates
+    # ---- filterCandidates.py
     filterCandidates.compareCandidateReads2Predicted()
