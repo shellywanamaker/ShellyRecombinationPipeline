@@ -418,30 +418,6 @@ class smartDict(dict):
 
 
 
-# ---- NON-ANALYSIS FUNCTIONS!!
-def startupChecks():
-
-    try:
-        return sys.argv[1]
-    except IndexError:
-        return os.getcwd()
-
-def check_PATH_for_program(f):
-    """
-    Check the unix $PATH environment for specified program
-    """
-
-    path = os.environ["PATH"].split(":")
-
-    for p in path:
-
-        if os.path.isfile(p + "/" + f):
-            return True
-
-    else:
-        return False
-
-
 if __name__=="__main__":
     """
     Script Expects:
@@ -474,5 +450,5 @@ if __name__=="__main__":
     # ---- Running
     f = filterData(csv_file)
 
-    f.compareCandidateReads2Predicted(modify_accession_numbers=True)
+    f.compareCandidateReads2Predicted(modify_accession_numbers=False)
 

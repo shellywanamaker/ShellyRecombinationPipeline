@@ -7,6 +7,7 @@ import signal
 
 class bowtieFastqs(object):
 
+
     def __init__(self):
         
         try:
@@ -103,6 +104,7 @@ class bowtieFastqs(object):
 
         #     output_file.close()
 
+
 def check_PATH_for_program(f):
         """
         Check the unix $PATH environment for specified program
@@ -116,6 +118,7 @@ def check_PATH_for_program(f):
                 return True
 
         return False
+
 
 
 if __name__=="__main__":
