@@ -64,8 +64,8 @@ class filterData(object):
                 row = line.strip().split()
 
                 readID = row[0]
-                geneA  = row[6].split(":")[0].split(".")[0]
-                geneB  = row[12].split(":")[0].split(".")[0]
+                geneA  = row[7].split(":")[0].split(".")[0]
+                geneB  = row[14].split(":")[0].split(".")[0]
 
 
                 if modify_accession_numbers:
@@ -197,28 +197,31 @@ class filterData(object):
 
         # Since Sam files have all reads. Count raw sam count gives number of input reads
         print("Counting Reads...")
-        count_input_reads_command = "wc -l ./alignments/bowtie.R1.tair10.sam | awk '{print $1}'"
+        count_input_reads_command = "wc -l bowtie.R1.tair10.sam | awk '{print $1}'"
         self.count_of_reads = check_output(count_input_reads_command,shell=True).strip()
 
-        bowtie_R1_alignments_command = """cat ./alignments/bowtie.R1.tair10.sam | awk '{count++; if(count > 9 && $3 != "*") print $0}' | wc -l | awk '{print $1}'"""
+        bowtie_R1_alignments_command = """cat bowtie.R1.tair10.sam | awk '{count++; if(count > 9 && $3 != "*") print $0}' | wc -l | awk '{print $1}'"""
         self.bowtie_R1_alignments = check_output(bowtie_R1_alignments_command,shell=True).strip()
 
-        bowtie_R2_alignments_command = """cat ./alignments/bowtie.R2.tair10.sam | awk '{count++; if(count > 9 && $3 != "*") print $0}' | wc -l | awk '{print $1}'"""
+        bowtie_R2_alignments_command = """cat bowtie.R2.tair10.sam | awk '{count++; if(count > 9 && $3 != "*") print $0}' | wc -l | awk '{print $1}'"""
         self.bowtie_R2_alignments = check_output(bowtie_R2_alignments_command,shell=True).strip()
 
         Candidate_Reads_count_command = "cat Candidate_Reads.txt | wc -l | awk '{print $1}'"
         self.Candidate_Reads_count = check_output(Candidate_Reads_count_command,shell=True).strip()
         
-        R1_slim_clean_count_command = "cat R1.slim.clean | wc -l | awk '{print $1}'"
+        R1_slim_clean_count_command = "cat R1.slim.filtered | wc -l | awk '{print $1}'"
         self.R1_slim_clean_count = check_output(R1_slim_clean_count_command,shell=True).strip()
 
-        R2_slim_clean_count_command = "cat R2.slim.clean | wc -l | awk '{print $1}'"
+        R2_slim_clean_count_command = "cat R2.slim.filtered | wc -l | awk '{print $1}'"
         self.R2_slim_clean_count = check_output(R2_slim_clean_count_command,shell=True).strip()
 
-        R1R2_join_count_command = "cat R1R2 | wc -l | awk '{print $1}'"
-        self.R1R2_join_count = check_output(R1R2_join_count_command,shell=True).strip()
+        R1R2_no_clones_command = "cat R1R2.gff.out | wc -l | awk '{print $1}'"
+        self.R1R2_no_clones = check_output(R1R2_no_clones_command,shell=True).strip()
 
-        # ------------------------- Output ---------------------------------- #
+        R1R2_alignments_only_command = "cat R1R2.gff.out | grep -v NA |wc -l | awk '{print $1}'"
+        self.R1R2_alignments_only = check_output(R1R2_alignments_only_command,shell=True).strip()
+
+        # ---- Output
         print("Writing RESULTS to disk.")
 
         with open("RESULTS.txt","w") as results:
@@ -227,9 +230,10 @@ class filterData(object):
             results.write("\n# Overall Number of reads: %s" % self.count_of_reads)
             results.write("\n# Count of R1 reads that aligned to genome: %s" % self.bowtie_R1_alignments)
             results.write("\n# Count of R2 reads that aligned to genome: %s" % self.bowtie_R2_alignments)
-            results.write("\n# Count of R1 reads after clone removal:    %s" % self.R1_slim_clean_count)
-            results.write("\n# Count of R2 reads after clone removal:    %s" % self.R2_slim_clean_count)
-            results.write("\n# Count of reads after joining R1 and R2:   %s" % self.R1R2_join_count)
+            results.write("\n# Count of R1 reads after removing Multi-Aligned, Non-Aligned, and Bad Reads:    %s" % self.R1_slim_clean_count)
+            results.write("\n# Count of R2 reads after removing Multi-Aligned, Non-Aligned, and Bad Reads:    %s" % self.R2_slim_clean_count)
+            results.write("\n# Count of R1R2 after joining R1 and R1, and removing clones:   %s" % self.R1R2_no_clones)
+            results.write("\n# Count of R1R2 reads where both R1 and R2 have alignments:    %s" % self.R1R2_alignments_only)
             results.write("\n# Count of Candidate Reads                  %s" % self.Candidate_Reads_count)
 
             results.write("\n\n# Number of predicted genes: %s" % len(predictedGenes))

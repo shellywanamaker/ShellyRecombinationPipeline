@@ -48,3 +48,6 @@ if __name__=="__main__":
     #       closest one.
     filterCandidates = filterData(csv_file)
     filterCandidates.compareCandidateReads2Predicted(modify_accession_numbers=False)
+
+    # ---- CleanUp
+    # loxData.cleanUp()
