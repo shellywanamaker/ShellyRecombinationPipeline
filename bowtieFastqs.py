@@ -3,6 +3,7 @@
 import os
 import sys
 import signal
+from subprocess import call
 
 
 class bowtieFastqs(object):
