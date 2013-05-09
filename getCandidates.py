@@ -268,7 +268,7 @@ class loxData(object):
         Using the chromosomal position of the alignment the annotated chromsomes 
         return what genes are on the positive and negative strands.
 
-        NOTE: the annotations are not stored in GIT. They are too big!
+        NOTE: If the annotations are not found it assumed they are zipped and will be unzipped
         """
         print("Prepping for GFF alignment Step.")
 
@@ -334,6 +334,7 @@ class loxData(object):
 
     # ---- ---- Helper Function for getCandidateReads
     def filterR1R2(self,R1R2,debug=False):
+        seen_genes = {}
 
         with open(R1R2,"r") as all_reads:
 
@@ -367,8 +368,21 @@ class loxData(object):
                     geneA = geneAinfo.split(":")[0].split(".")[0]
                     geneB = geneBinfo.split(":")[0].split(".")[0]
 
+                    # Count the amount of times we see genes
+                    seen_genes[geneA] = seen_genes.get(geneA,0) + 1
+                    seen_genes[geneB] = seen_genes.get(geneB,0) + 1
+
                     if geneA != geneB:
                         candidate_reads.write(" ".join([" ".join(A_line_info),geneAinfo," ".join(B_line_info),geneBinfo + "\n"]))
+
+        # Print out Seen_Genes
+        seen_genes_keys = seen_genes.keys()[:]
+        seen_genes_keys.sort()
+
+        with open("GENE_COUNTS.csv","w") as out_file:
+            for gene in seen_genes_keys:
+                out_file.write("%s,%s\n" % (gene,seen_genes[gene]))
+
 
 
     # ---- ---- Helper Function for filterR1R2. Decides how to rank the two strands.
@@ -465,7 +479,7 @@ if __name__== "__main__":
     loxData = loxData()
 
     # ---- Run Methods
-    loxData.slim_and_clean_sam_files(no_filter=False,harsh_filter=True)
-    loxData.align2gff(debug=True)
+    # loxData.slim_and_clean_sam_files(no_filter=False,harsh_filter=True)
+    # loxData.align2gff(debug=True)
     loxData.getCandidateReads()
-    loxData.cleanUp()
+    # loxData.cleanUp()
