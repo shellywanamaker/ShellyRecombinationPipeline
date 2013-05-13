@@ -379,10 +379,10 @@ class loxData(object):
         seen_genes_keys = seen_genes.keys()[:]
         seen_genes_keys.sort()
 
+        print("Writing seen genes out to GENE_COUNTS.csv")
         with open("GENE_COUNTS.csv","w") as out_file:
             for gene in seen_genes_keys:
                 out_file.write("%s,%s\n" % (gene,seen_genes[gene]))
-
 
 
     # ---- ---- Helper Function for filterR1R2. Decides how to rank the two strands.
