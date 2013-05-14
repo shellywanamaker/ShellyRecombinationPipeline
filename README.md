@@ -10,7 +10,7 @@ Shelly Recombination Pipeline
 ## To Run
 Each module can actually run on it's own. The recombinationPipeline is actually just a wrapper script that calls the modules in order.
 
-## NOTE
+### NOTE
 The chromosome annotations that the script uses are not built by default. However, the script checks the first time it is run and if it cannot find the annotations it will build them from the included TAIR10 GFF3. From then on the script can run without having to build th annotations every time. The script, parseGFF.py, can actually be used on any arbitrary genome's GFF as long as it is in the same format as the TAIR10 GFF3.
 
 ### bowtieFastqs.py
