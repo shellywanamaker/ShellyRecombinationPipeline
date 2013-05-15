@@ -11,6 +11,21 @@ def parseGFF(gff):
     # GLOBAL
     sections = set(["five_prime_UTR","CDS","three_prime_UTR"])
     genome_name = os.path.basename(gff).split("_")[0].lower()
+    gff = os.path.abspath(gff)
+
+    # Get Script Dir
+    script_dir = os.path.abspath(os.path.split(sys.argv[0])[0])
+
+    # Make Annotations Folder
+    annotations_folder = os.path.join(script_dir,"Chromosome_Annotations")
+    genome_folder      = os.path.join(annotations_folder,genome_name)
+
+    command            = "mkdir %s;mkdir %s" % (annotations_folder,genome_folder)
+    subprocess.call(command,shell=True)
+
+
+    # Change into that directory
+    os.chdir(genome_folder)
 
 
     # First Pass to Get the different Chromosomes
@@ -72,7 +87,7 @@ def parseGFF(gff):
             positions = chromosome_positions.keys()[:]
             positions.sort()
 
-            with open(genome_name+"_"+gff_chrom,"w") as chrom_out:
+            with open(gff_chrom.replace("Chr","").replace("chr",""),"w") as chrom_out:
                 for position in positions:
 
                     pos = list(chromosome_positions[position][0])
