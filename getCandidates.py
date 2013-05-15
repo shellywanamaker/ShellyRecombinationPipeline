@@ -13,7 +13,7 @@ class loxData(object):
 
 
     # ---- Initiate Object
-    def __init__(self):
+    def __init__(self,genome="tair10"):
         path = os.getcwd()
         R1sam = [x for x in os.listdir(path) if "R1" in x and "sam" in x and not "multi" in x]
         R2sam = [x for x in os.listdir(path) if "R2" in x and "sam" in x and not "multi" in x]
@@ -28,34 +28,38 @@ class loxData(object):
             print("Make sure your R1 & R2 files end in a .sam")
             sys.exit(1)
 
-        self.R1sam = os.path.realpath(R1sam[0])
-        self.R2sam = os.path.realpath(R2sam[0])
+        self.R1sam  = os.path.realpath(R1sam[0])
+        self.R2sam  = os.path.realpath(R2sam[0])
+        self.genome = genome
 
         # Check for Chrom Annotations
         # Find the dir where the script is installed
         # Use that to infer where the annotations are kept.
-        annotations_folder_name    = "TAIR10_Chrom_Annotations"
+        annotations_folder_name    = "Chromosome_Annotations"
         abs_path_to_script         = os.path.realpath(sys.argv[0])
         script_dir                 = os.path.split(abs_path_to_script)[0]
+        
+        # Current Implementation assumes that the Chromosome Annotations will
+        # always exist but the tair10
+        self.chrom_annotations_dir  = os.path.join(script_dir,annotations_folder_name)
+        self.genome_annotations_dir = os.path.join(self.chrom_annotations_dir,genome)
 
-        self.chrom_annotations_dir = os.path.join(script_dir,annotations_folder_name)
+        if not os.path.isdir(self.genome_annotations_dir):
+            print("Can't Find the chromosome annotations for %s in %s" % (self.genome,self.chrom_annotations_dir))
 
-        # Is there a Chrom Annotations zip in the dir?
-        if not os.path.isdir(self.chrom_annotations_dir) and os.path.isfile(self.chrom_annotations_dir + ".zip"):
-            # Unzip annotations folder
-            print("Installing TAIR10 Chromosome Annotations in the Script Directory")
-            print("This will happen only the first time the script is run on a server")
-            print("\tUnzipping...")
-            unzip = "unzip %s -d %s" % (self.chrom_annotations_dir + ".zip",script_dir)
-            call(unzip,shell=True)
-            print
-            print("Now Resuming Script.")
+            gff = [x for x in os.listdir(self.chrom_annotations_dir) if "gff" in x.lower() and genome in x.lower()]
+            gff = gff[0]
+   
+            if not gff:
+                print("Couldn't find a corresponding GFF for %s in %s" % (self.genome,self.chrom_annotations_dir))
+                print("Please place one in %s and run again" % (self.chrom_annotations_dir))
+                sys.exit(1)
+      
+            print("Using %s to create Chromosome Annotations" % (gff)) 
+            print("This will only occur once for every new genome")
 
-        elif not os.path.isdir(self.chrom_annotations_dir) and not os.path.isfile(self.chrom_annotations_dir + ".zip"):
-            print("Could not find either the TAIR10 Chrom annotations folder or chrom Annotations Zip")
-            print("Please re-clone from GITHUB")
-            sys.exit(1)
-
+            command = "%s %s" % (os.path.join(script_dir,"parseGFF.py"),os.path.join(self.chrom_annotations_dir,gff))
+            call(command,shell=True)
 
     # ----  Remove non-aligned; ChrM and ChrC; low quality; and clones
     def slim_and_clean_sam_files(self,no_filter=False,harsh_filter=False):
@@ -439,6 +443,6 @@ if __name__== "__main__":
 
     # ---- Run Methods
     # loxData.slim_and_clean_sam_files(no_filter=False,harsh_filter=True)
-    loxData.align2gff(debug=True)
-    loxData.getCandidateReads()
+    # loxData.align2gff(debug=True)
+    # loxData.getCandidateReads()
     # loxData.cleanUp()
