@@ -68,7 +68,6 @@ def parseGFF(gff):
                 gene = gene.split(".")[0]
 
                 gene_info_to_print = ":".join([gene,gene_section])
-                print line,section_start,section_end,section_end - section_start
                 # Add these Positions to the Dictionary
                 for position in xrange(section_start,section_end + 1):
                     # Does that position exist?
