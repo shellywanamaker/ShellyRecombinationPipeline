@@ -68,7 +68,7 @@ def parseGFF(gff):
                 gene = gene.split(".")[0]
 
                 gene_info_to_print = ":".join([gene,gene_section])
-
+                print line,section_start,section_end,section_end - section_start
                 # Add these Positions to the Dictionary
                 for position in xrange(section_start,section_end + 1):
                     # Does that position exist?
@@ -80,8 +80,9 @@ def parseGFF(gff):
                         direction_index = 0
                     else:
                         direction_index = 1
-
+                    
                     chromosome_positions[position][direction_index].add(gene_info_to_print)
+
 
             print("Writing GFF out to File for %s" % (gff_chrom))
             positions = chromosome_positions.keys()[:]
