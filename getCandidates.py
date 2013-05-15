@@ -325,15 +325,15 @@ class loxData(object):
 
     # ---- Get Candidate Reads by joining R1 and R2 together. Filter and keep genes
     # ---- where R1 != R2
-    def getCandidateReads(self):
+    def getCandidateReads(self,debug=False):
         print("Getting Candidate Reads")
 
         print("\tFiltering R1R2: Only keeping reads where GeneA != GeneB")
-        self.filterR1R2("R1R2.gff.out")
+        self.filterR1R2("R1R2.gff.out",debug=debug)
 
 
     # ---- ---- Helper Function for getCandidateReads
-    def filterR1R2(self,R1R2,debug=False):
+    def filterR1R2(self,R1R2,debug):
         seen_genes = {}
 
         with open(R1R2,"r") as all_reads:
@@ -355,12 +355,19 @@ class loxData(object):
                     if geneAPos == "NotAligned" or geneBPos == "NotAligned":
                         continue
 
-                    genes_to_choose = {"geneA":(geneAPos,geneANeg),"geneB":(geneBPos,geneBNeg)}
+                    # If overlapping genes Choose the one with the highest ranking
+                    # This sorting technique will be used for choosing overlapping strands
+                    # and between GeneA and GeneB
+                    geneAPos = sorted(geneAPos.split(";"),key = lambda x: self.ranking(x))[0]
+                    geneANeg = sorted(geneANeg.split(";"),key = lambda x: self.ranking(x))[0]
 
-                    genes = self.chooseGeneAandGeneB(genes_to_choose)
+                    geneBPos = sorted(geneBPos.split(";"),key = lambda x: self.ranking(x))[0]
+                    geneBNeg = sorted(geneBNeg.split(";"),key = lambda x: self.ranking(x))[0]
+                    
+                    # Now Choose between strands
+                    geneAinfo = sorted([geneAPos,geneANeg],key = lambda x: self.ranking(x))[0]
+                    geneBinfo = sorted([geneBPos,geneBNeg],key = lambda x: self.ranking(x))[0]
 
-                    geneAinfo = genes["geneA"]
-                    geneBinfo = genes["geneB"]
 
                     if debug:
                         print line.strip(),geneAinfo,geneBinfo
@@ -384,80 +391,32 @@ class loxData(object):
             for gene in seen_genes_keys:
                 out_file.write("%s,%s\n" % (gene,seen_genes[gene]))
 
+    @staticmethod
+    def ranking(full_gene_info):
+        """
+        """
+        if full_gene_info == "Intergenic":
+            return 20
 
-    # ---- ---- Helper Function for filterR1R2. Decides how to rank the two strands.
-    def chooseGeneAandGeneB(self,geneDict):
-        for gene in geneDict:
+        try:   
+            section = section.split(":")[1]
+        
+        except IndexError:
+            section = full_gene_info
 
-            pos = geneDict[gene][0]
-            neg = geneDict[gene][1]
-
-            if pos != "Intergenic":
-
-                if pos.split(":")[1] == "Three":
-                    pos_val = (5,pos)
-
-                elif pos.split(":")[1] == "CDS":
-                    pos_val = (4,pos)
-
-                elif pos.split(":")[1] == "Promoter":
-                    pos_val = (3,pos)
-
-                elif pos.split(":")[1] == "Post":
-                    pos_val = (2,pos)
-                
-                elif pos.split(":")[1] == "pseudo_start":
-                    pos_val = (2,pos)
-
-                elif pos.split(":")[1] == "Five":
-                    pos_val = (2,pos)
-
-                elif pos.split(":")[1] == "pseudogenic_transcript":
-                    pos_val = (2,pos)
-
-                elif pos.split(":")[1] == "pseudo_end":
-                    pos_val = (2,pos)
-
-            else:
-                pos_val = (1,pos)
-
-            if neg != "Intergenic":
-
-                if neg.split(":")[1] == "Three":
-                    neg_val = (5,neg)
-
-                elif neg.split(":")[1] == "CDS":
-                    neg_val = (4,neg)
-
-                elif neg.split(":")[1] == "Promoter":
-                    neg_val = (3,neg)
-
-                elif neg.split(":")[1] == "Post":
-                    neg_val = (2,neg)
-
-                elif neg.split(":")[1] == "pseudo_start":
-                    neg_val = (2,neg)
-                
-                elif neg.split(":")[1] == "Five":
-                    neg_val = (2,neg)
-                
-                elif neg.split(":")[1] == "pseudogenic_transcript":
-                    neg_val = (2,neg)
-
-                elif neg.split(":")[1] == "pseudo_end":
-                    neg_val = (2,neg)
+        if section == "CDS":
+            return 1
+        
+        elif section == "three_prime_UTR":
+            return 2
+        
+        elif section == "five_prime_UTR":
+            return 3
+        
+        else:
+            return 10
 
 
-            else:
-                neg_val = (1,neg)
-
-            
-            gene_tuple = max(pos_val,neg_val)
-            geneDict[gene] = gene_tuple[1]
-
-        return geneDict
-
-    
     # ---- Removes temporary files in current working directory
     def cleanUp(self):
         """
@@ -480,6 +439,6 @@ if __name__== "__main__":
 
     # ---- Run Methods
     # loxData.slim_and_clean_sam_files(no_filter=False,harsh_filter=True)
-    # loxData.align2gff(debug=True)
+    loxData.align2gff(debug=True)
     loxData.getCandidateReads()
     # loxData.cleanUp()
