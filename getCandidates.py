@@ -279,8 +279,8 @@ class loxData(object):
         if debug:
             self.R1R2 = "R1R2.no.genes.no.clones"
 
-        chromosome_files = [os.path.join(self.chrom_annotations_dir,str(x)) for x in range(1,6)]
-        chromosomes = {str(x):{} for x in range(1,6)}
+        chromosome_files = [os.path.join(self.genome_annotations_dir,gen) for gen in os.listdir(self.genome_annotations_dir)]
+        chromosomes = {x:{} for x in os.listdir(self.genome_annotations_dir)}
         
         for chromosome in chromosome_files:
             print("\tLoading Chromosome %s into Memory" % chromosome)
@@ -313,15 +313,23 @@ class loxData(object):
                     geneB_start      = row[8]
                     geneB_info       = row[7:]
 
-                    if geneA_chromosome != "NA":
-                        geneAPos,geneANeg = chromosomes[geneA_chromosome][geneA_start]
-                    else:
-                        geneAPos,geneANeg = ("NotAligned","NotAligned")
+                    try:
+                        if geneA_chromosome != "NA":
+                            geneAPos,geneANeg = chromosomes[geneA_chromosome][geneA_start]
+                        else:
+                            geneAPos,geneANeg = ("NotAligned","NotAligned")
+                    
+                    except KeyError:
+                        geneAPos,geneANeg = ("Intergenic","Intergenic")
 
-                    if geneB_chromosome != "NA":
-                        geneBPos,geneBNeg = chromosomes[geneB_chromosome][geneB_start]
-                    else:
-                        geneBPos,geneBNeg = ("NotAligned","NotAligned")
+                    try:
+                        if geneB_chromosome != "NA":
+                            geneBPos,geneBNeg = chromosomes[geneB_chromosome][geneB_start]
+                        else:
+                            geneBPos,geneBNeg = ("NotAligned","NotAligned")
+                    
+                    except KeyError:
+                        geneBPos,geneBNeg = ("Intergenic","Intergenic")
 
                     to_write = [readID] + geneA_info + [geneAPos,geneANeg] + geneB_info + [geneBPos,geneBNeg]
                     out_file.write(" ".join(to_write) + "\n")
@@ -383,6 +391,8 @@ class loxData(object):
                     seen_genes[geneA] = seen_genes.get(geneA,0) + 1
                     seen_genes[geneB] = seen_genes.get(geneB,0) + 1
 
+                    print geneA,geneB
+
                     if geneA != geneB:
                         candidate_reads.write(" ".join([" ".join(A_line_info),geneAinfo," ".join(B_line_info),geneBinfo + "\n"]))
 
@@ -403,7 +413,7 @@ class loxData(object):
             return 20
 
         try:   
-            section = section.split(":")[1]
+            section = full_gene_info.split(":")[1]
         
         except IndexError:
             section = full_gene_info
@@ -443,6 +453,6 @@ if __name__== "__main__":
 
     # ---- Run Methods
     # loxData.slim_and_clean_sam_files(no_filter=False,harsh_filter=True)
-    # loxData.align2gff(debug=True)
-    # loxData.getCandidateReads()
+    #loxData.align2gff(debug=True)
+    loxData.getCandidateReads()
     # loxData.cleanUp()
