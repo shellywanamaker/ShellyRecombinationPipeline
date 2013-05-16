@@ -292,7 +292,7 @@ class loxData(object):
                     position = row[0]
                     positive = row[1]
                     negative = row[2]
-
+                    
                     chromosomes[chrom][position] = (positive,negative)
 
         # Go through and match
@@ -314,25 +314,46 @@ class loxData(object):
                     geneB_info       = row[7:]
 
                     try:
-                        if geneA_chromosome != "NA":
+                        if geneA_start != "NA":
                             geneAPos,geneANeg = chromosomes[geneA_chromosome][geneA_start]
                         else:
                             geneAPos,geneANeg = ("NotAligned","NotAligned")
                     
                     except KeyError:
-                        geneAPos,geneANeg = ("Intergenic","Intergenic")
-
+                        # Check to make sure this is right by checking
+                        # 10bp above and 10bp below
+                        geneAPos,geneANeg = self.checkNearbyBasePairs(geneA_start,chromosomes[geneA_chromosome]) 
+        
                     try:
-                        if geneB_chromosome != "NA":
+                        if geneB_start != "NA":
                             geneBPos,geneBNeg = chromosomes[geneB_chromosome][geneB_start]
                         else:
                             geneBPos,geneBNeg = ("NotAligned","NotAligned")
                     
                     except KeyError:
-                        geneBPos,geneBNeg = ("Intergenic","Intergenic")
+                        geneBPos,geneBNeg = self.checkNearbyBasePairs(geneB_start,chromosomes[geneB_chromosome])
 
                     to_write = [readID] + geneA_info + [geneAPos,geneANeg] + geneB_info + [geneBPos,geneBNeg]
                     out_file.write(" ".join(to_write) + "\n")
+
+    
+
+    # ---- ---- Check the basepair positions for all key errors
+    @staticmethod
+    def checkNearbyBasePairs(position,chromosome,below=10,above=10):
+        """
+        Take in a position that throws a key error and checks the closest
+        ten basepairs on either side to see if the GFF was off by a bp.
+        """
+        position = int(position)        
+
+        for basepair in xrange(position-below,position+above):
+            basepair = str(basepair)
+
+            if basepair in chromosome:
+                return chromosome[basepair]
+        else:
+            return ("Intergenic","Intergenic")
 
 
     # ---- Get Candidate Reads by joining R1 and R2 together. Filter and keep genes
@@ -391,7 +412,7 @@ class loxData(object):
                     seen_genes[geneA] = seen_genes.get(geneA,0) + 1
                     seen_genes[geneB] = seen_genes.get(geneB,0) + 1
 
-                    print geneA,geneB
+                    # print geneA,geneB
 
                     if geneA != geneB:
                         candidate_reads.write(" ".join([" ".join(A_line_info),geneAinfo," ".join(B_line_info),geneBinfo + "\n"]))
@@ -453,6 +474,6 @@ if __name__== "__main__":
 
     # ---- Run Methods
     # loxData.slim_and_clean_sam_files(no_filter=False,harsh_filter=True)
-    #loxData.align2gff(debug=True)
+    loxData.align2gff(debug=True)
     loxData.getCandidateReads()
     # loxData.cleanUp()
