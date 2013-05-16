@@ -419,10 +419,10 @@ class loxData(object):
             section = full_gene_info
 
         if section == "CDS":
-            return 1
+            return 2
         
         elif section == "three_prime_UTR":
-            return 2
+            return 1
         
         elif section == "five_prime_UTR":
             return 3
