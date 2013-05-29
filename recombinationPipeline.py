@@ -39,7 +39,7 @@ if __name__=="__main__":
     # ---- getCandidates.py
     loxData = loxData()
     loxData.slim_and_clean_sam_files(no_filter=False,harsh_filter=True)
-    loxData.align2gff()
+    #loxData.align2gff()
     loxData.getCandidateReads()
 
     # ---- filterCandidates.py
