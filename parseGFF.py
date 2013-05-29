@@ -20,7 +20,7 @@ def parseGFF(gff):
     annotations_folder = os.path.join(script_dir,"Chromosome_Annotations")
     genome_folder      = os.path.join(annotations_folder,genome_name)
 
-    if not os.path.iisdir(annotations_folder):
+    if not os.path.isdir(annotations_folder):
         command            = "mkdir %s;mkdir %s" % (annotations_folder,genome_folder)
     else:
         command = "mkdir %s" % (genome_folder)
