@@ -74,7 +74,9 @@ class loxData(object):
         for r in [(self.R1sam,R1Basename),(self.R2sam,R2Basename)]:
             print("\t Removing from %s" % r[0])
             # Remove any ambiguous reads, Keep only aligned and skip headers, sort on column 1
-            command = """cat %s | sed '/XS:/d' | awk '{if($3 != "*" && NF > 5)print $0}' | sort -k1,1 > %s.no.multi""" % (r[0],r[1])
+            # Turned off multi map removers
+            # command = """cat %s | sed '/XS:/d' | awk '{if($3 != "*" && NF > 5)print $0}' | sort -k1,1 > %s.no.multi""" % (r[0],r[1])
+            command = """cat %s | awk '{if($3 != "*" && NF > 5)print $0}' | sort -k1,1 > %s.no.multi""" % (r[0],r[1])
             subprocess.call(command,shell=True)
 
         self.R1sam = R1Basename + ".no.multi"
@@ -362,7 +364,7 @@ class loxData(object):
         print("Getting Candidate Reads")
 
         print("\tFiltering R1R2: Only keeping reads where GeneA != GeneB")
-        self.filterR1R2("R1R2.gff.out",debug=debug)
+        self.filterR1R2("R1R2.no.genes.no.clones",debug=debug)
 
 
     # ---- ---- Helper Function for getCandidateReads
@@ -371,42 +373,48 @@ class loxData(object):
 
         with open(R1R2,"r") as all_reads:
 
-            with open("Candidate_Reads.txt","w") as candidate_reads:
+            with open("Candidate_Reads","w") as candidate_reads:
 
                 for i,line in enumerate(all_reads):
 
                     row = line.strip().split()
+                    readID = row[0]
+                    geneA  = row[1].split(".")[0]
+                    geneB  = row[7].split(".")[0]
 
-                    A_line_info = row[:7]
-                    B_line_info = row[9:15]
+                    genes = [geneA,geneB]
+                    genes.sort()
 
-                    geneAPos = row[7]
-                    geneANeg = row[8]
-                    geneBPos = row[15]
-                    geneBNeg = row[16]
+                   # A_line_info = row[:7]
+                   # B_line_info = row[9:15]
 
-                    if geneAPos == "NotAligned" or geneBPos == "NotAligned":
-                        continue
+                   # geneAPos = row[7]
+                   # geneANeg = row[8]
+                   # geneBPos = row[15]
+                   # geneBNeg = row[16]
 
-                    # If overlapping genes Choose the one with the highest ranking
-                    # This sorting technique will be used for choosing overlapping strands
-                    # and between GeneA and GeneB
-                    geneAPos = sorted(geneAPos.split(";"),key = lambda x: self.ranking(x))[0]
-                    geneANeg = sorted(geneANeg.split(";"),key = lambda x: self.ranking(x))[0]
+                   # if geneAPos == "NotAligned" or geneBPos == "NotAligned":
+                   #     continue
 
-                    geneBPos = sorted(geneBPos.split(";"),key = lambda x: self.ranking(x))[0]
-                    geneBNeg = sorted(geneBNeg.split(";"),key = lambda x: self.ranking(x))[0]
-                    
-                    # Now Choose between strands
-                    geneAinfo = sorted([geneAPos,geneANeg],key = lambda x: self.ranking(x))[0]
-                    geneBinfo = sorted([geneBPos,geneBNeg],key = lambda x: self.ranking(x))[0]
+                   # # If overlapping genes Choose the one with the highest ranking
+                   # # This sorting technique will be used for choosing overlapping strands
+                   # # and between GeneA and GeneB
+                   # geneAPos = sorted(geneAPos.split(";"),key = lambda x: self.ranking(x))[0]
+                   # geneANeg = sorted(geneANeg.split(";"),key = lambda x: self.ranking(x))[0]
+
+                   # geneBPos = sorted(geneBPos.split(";"),key = lambda x: self.ranking(x))[0]
+                   # geneBNeg = sorted(geneBNeg.split(";"),key = lambda x: self.ranking(x))[0]
+                   # 
+                   # # Now Choose between strands
+                   # geneAinfo = sorted([geneAPos,geneANeg],key = lambda x: self.ranking(x))[0]
+                   # geneBinfo = sorted([geneBPos,geneBNeg],key = lambda x: self.ranking(x))[0]
 
 
                     if debug:
                         print line.strip(),geneAinfo,geneBinfo
 
-                    geneA = geneAinfo.split(":")[0].split(".")[0]
-                    geneB = geneBinfo.split(":")[0].split(".")[0]
+                   # geneA = geneAinfo.split(":")[0].split(".")[0]
+                   # geneB = geneBinfo.split(":")[0].split(".")[0]
 
                     # Count the amount of times we see genes
                     seen_genes[geneA] = seen_genes.get(geneA,0) + 1
@@ -414,8 +422,8 @@ class loxData(object):
 
                     # print geneA,geneB
 
-                    if geneA != geneB:
-                        candidate_reads.write(" ".join([" ".join(A_line_info),geneAinfo," ".join(B_line_info),geneBinfo + "\n"]))
+                    if geneA != geneB and (geneA != "NA" and geneB != "NA"):
+                        candidate_reads.write(",".join([readID] + genes) + "\n" )
 
         # Print out Seen_Genes
         seen_genes_keys = seen_genes.keys()[:]
@@ -424,7 +432,8 @@ class loxData(object):
         print("Writing seen genes out to GENE_COUNTS.csv")
         with open("GENE_COUNTS","w") as out_file:
             for gene in seen_genes_keys:
-                out_file.write("%s,%s\n" % (gene,seen_genes[gene]))
+                if gene != "NA":
+                    out_file.write("%s,%s\n" % (gene,seen_genes[gene]))
 
     @staticmethod
     def ranking(full_gene_info):
@@ -473,7 +482,6 @@ if __name__== "__main__":
     loxData = loxData()
 
     # ---- Run Methods
-    # loxData.slim_and_clean_sam_files(no_filter=False,harsh_filter=True)
-    loxData.align2gff(debug=True)
+    loxData.slim_and_clean_sam_files(no_filter=False,harsh_filter=True)
     loxData.getCandidateReads()
-    # loxData.cleanUp()
+    loxData.cleanUp() 

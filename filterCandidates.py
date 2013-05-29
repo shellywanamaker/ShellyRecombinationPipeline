@@ -57,15 +57,15 @@ class filterData(object):
             sys.exit(1)
 
         # Going Through Candidate Reads
-        with open("Candidate_Reads.txt","r") as candidate_reads:
+        with open("Candidate_Reads","r") as candidate_reads:
 
             print("Going through the Candidate Reads")
             for line in candidate_reads:
-                row = line.strip().split()
+                row = line.strip().split(",")
 
                 readID = row[0]
-                geneA  = row[7].split(":")[0].split(".")[0]
-                geneB  = row[14].split(":")[0].split(".")[0]
+                geneA  = row[1]
+                geneB  = row[2]
 
 
                 if modify_accession_numbers:
@@ -354,8 +354,6 @@ class smartDict(dict):
     def sort(self,highToLow = True):
         """
         Sorts the dict by how many values a key has
-
-        Returns that sorted list
         """
         countOfKeysAndTheirValues = self.count()
 
@@ -431,10 +429,10 @@ if __name__=="__main__":
     """
 
     # ---- Prepping for Run
-    candidate_reads = os.path.join(os.getcwd(),"Candidate_Reads.txt")
+    candidate_reads = os.path.join(os.getcwd(),"Candidate_Reads")
 
     if not os.path.isfile(candidate_reads):
-        print("\nCould not find Candidate_Reads.txt in your current folder\nBye!\n")
+        print("\nCould not find Candidate_Reads in your current folder\nBye!\n")
         sys.exit(1)
 
     csv_files = [x for x in os.listdir(os.getcwd()) if ".csv" in x]

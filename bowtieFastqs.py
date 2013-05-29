@@ -40,7 +40,7 @@ class bowtieFastqs(object):
         self.path = path
 
 
-    def bowtie(self,options="--local -p 3",indexes_folder="/home/shelly/bin/bowtie2/INDEXES/",genome_basename="tair10"):
+    def bowtie(self,options="--local -p 3",indexes_folder="/home/shelly/bin/bowtie2/INDEXES/",genome_basename="tair10.cDNA"):
         """
         As long as Align output is Sam the script will still work.
         """
@@ -145,7 +145,7 @@ def check_PATH_for_program(f):
 
 if __name__=="__main__":
 
-    genome_basename = "tair10"
+    genome_basename = "tair10.cDNA"
     options         = "--local -p 3"
     indexes_folder  = "/home/shelly/bin/bowtie2/INDEXES/" 
 
