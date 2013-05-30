@@ -32,34 +32,36 @@ class loxData(object):
         self.R2sam  = os.path.realpath(R2sam[0])
         self.genome = genome
 
-        # Check for Chrom Annotations
-        # Find the dir where the script is installed
-        # Use that to infer where the annotations are kept.
-        annotations_folder_name    = "Chromosome_Annotations"
-        abs_path_to_script         = os.path.realpath(sys.argv[0])
-        script_dir                 = os.path.split(abs_path_to_script)[0]
-        
-        # Current Implementation assumes that the Chromosome Annotations will
-        # always exist but the tair10
-        self.chrom_annotations_dir  = os.path.join(script_dir,annotations_folder_name)
-        self.genome_annotations_dir = os.path.join(self.chrom_annotations_dir,genome)
+       # # Check for Chrom Annotations
+       # # Find the dir where the script is installed
+       # # Use that to infer where the annotations are kept.
+       # annotations_folder_name    = "Chromosome_Annotations"
+       # abs_path_to_script         = os.path.realpath(sys.argv[0])
+       # script_dir                 = os.path.split(abs_path_to_script)[0]
+       # 
+       # # NOTE: We've since moved to a CDS only bowtie INDEX. As such this method won't
+       # # be needed anymore. It will, however be left in for legacy concerns
+       # # Current Implementation assumes that the Chromosome Annotations will
+       # # always exist but the tair10
+       # self.chrom_annotations_dir  = os.path.join(script_dir,annotations_folder_name)
+       # self.genome_annotations_dir = os.path.join(self.chrom_annotations_dir,genome)
 
-        if not os.path.isdir(self.genome_annotations_dir):
-            print("Can't Find the chromosome annotations for %s in %s" % (self.genome,self.chrom_annotations_dir))
+       # if not os.path.isdir(self.genome_annotations_dir):
+       #     print("Can't Find the chromosome annotations for %s in %s" % (self.genome,self.chrom_annotations_dir))
 
-            gff = [x for x in os.listdir(self.chrom_annotations_dir) if "gff" in x.lower() and genome in x.lower()]
-            gff = gff[0]
+       #     gff = [x for x in os.listdir(self.chrom_annotations_dir) if "gff" in x.lower() and genome in x.lower()]
+       #     gff = gff[0]
    
-            if not gff:
-                print("Couldn't find a corresponding GFF for %s in %s" % (self.genome,self.chrom_annotations_dir))
-                print("Please place one in %s and run again" % (self.chrom_annotations_dir))
-                sys.exit(1)
+       #     if not gff:
+       #         print("Couldn't find a corresponding GFF for %s in %s" % (self.genome,self.chrom_annotations_dir))
+       #         print("Please place one in %s and run again" % (self.chrom_annotations_dir))
+       #         sys.exit(1)
       
-            print("Using %s to create Chromosome Annotations" % (gff)) 
-            print("This will only occur once for every new genome")
+       #     print("Using %s to create Chromosome Annotations" % (gff)) 
+       #     print("This will only occur once for every new genome")
 
-            command = "%s %s" % (os.path.join(script_dir,"parseGFF.py"),os.path.join(self.chrom_annotations_dir,gff))
-            call(command,shell=True)
+       #     command = "%s %s" % (os.path.join(script_dir,"parseGFF.py"),os.path.join(self.chrom_annotations_dir,gff))
+       #     call(command,shell=True)
 
     # ----  Remove non-aligned; ChrM and ChrC; low quality; and clones
     def slim_and_clean_sam_files(self,no_filter=False,harsh_filter=False):
