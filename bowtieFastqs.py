@@ -40,11 +40,11 @@ class bowtieFastqs(object):
         self.path = path
 
 
-    def bowtie(self,options="--local -p 3",indexes_folder="/home/shelly/bin/bowtie2/INDEXES/",genome_basename="tair10.cDNA"):
+    def bowtie(self,options="--local -p 3",indexes_folder="/mnt/sculpin/data5/Shelly/bin/bowtie2/INDEXES/tair10.cDNA",genome_basename="tair10.cDNA"):
         """
         As long as Align output is Sam the script will still work.
         """
-        if not os.path.isdir("/home/shelly/bin/bowtie2/INDEXES/"):
+        if not os.path.isdir(indexes_folder):
             print("Could not find your INDEXES Folder: %s" % indexes_folder)
 
             while True:
@@ -147,7 +147,7 @@ if __name__=="__main__":
 
     genome_basename = "tair10.cDNA"
     options         = "--local -p 3"
-    indexes_folder  = "/home/shelly/bin/bowtie2/INDEXES/" 
+    indexes_folder  = "/mnt/sculpin/data5/Shelly/bin/bowtie2/INDEXES/tair10.cDNA" 
 
     # ---- Check for Bowtie2
     if not check_PATH_for_program("bowtie2"):
