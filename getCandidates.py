@@ -72,17 +72,17 @@ class loxData(object):
         R1Basename = os.path.basename(self.R1sam)
         R2Basename = os.path.basename(self.R2sam)
 
-        print("Removing Multi-Aligned and Non-Aligned Reads per Bowtie2 Spec")
-        for r in [(self.R1sam,R1Basename),(self.R2sam,R2Basename)]:
-            print("\t Removing from %s" % r[0])
+        #print("Removing Multi-Aligned and Non-Aligned Reads per Bowtie2 Spec")
+       # for r in [(self.R1sam,R1Basename),(self.R2sam,R2Basename)]:
+            #print("\t Removing from %s" % r[0])
             # Remove any ambiguous reads, Keep only aligned and skip headers, sort on column 1
             # Turned off multi map removers
             # command = """cat %s | sed '/XS:/d' | awk '{if($3 != "*" && NF > 5)print $0}' | sort -k1,1 > %s.no.multi""" % (r[0],r[1])
-            command = """cat %s | awk '{if($3 != "*" && NF > 5)print $0}' | sort -k1,1 > %s.no.multi""" % (r[0],r[1])
-            subprocess.call(command,shell=True)
+          #  command = """cat %s | awk '{if($3 != "*" && NF > 5)print $0}' | sort -k1,1 > %s.no.multi""" % (r[0],r[1])
+          #  subprocess.call(command,shell=True)
 
-        self.R1sam = R1Basename + ".no.multi"
-        self.R2sam = R2Basename + ".no.multi"
+       # self.R1sam = R1Basename + ".no.multi"
+       # self.R2sam = R2Basename + ".no.multi"
 
         # This step is where the extra SAM information is tossed and the
         # Snipstring filters are.
